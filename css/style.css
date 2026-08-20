@@ -140,6 +140,9 @@ input[type=range] { width: 80%; vertical-align: middle; }
   position: relative; z-index: 2;
   font-size: 42px; line-height: 1; pointer-events: none;
   text-shadow: 0 2px 3px rgba(0,0,0,.5);
+  /* Force text presentation so classic chess glyphs are NOT rendered as colored
+     emoji boxes (which overflow each square and make the board look separated). */
+  font-variant-emoji: text;
 }
 .piece.w { color: #fbf6ee; -webkit-text-stroke: 1px #222; }
 .piece.b { color: #1c1c1c; -webkit-text-stroke: 1px #999; }

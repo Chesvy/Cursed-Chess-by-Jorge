@@ -11,8 +11,11 @@
   const PIECE_NAMES = {
     p: 'Peón', n: 'Caballo', b: 'Alfil', r: 'Torre', q: 'Dama', k: 'Rey',
   };
+  // U+FE0E (VARIATION SELECTOR-15) forces TEXT presentation so pieces render as
+  // single-color glyphs instead of colored emoji boxes (which break the board on
+  // phones by overflowing each square).
   const PIECE_SYMBOLS = {
-    p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚',
+    p: '♟\uFE0E', n: '♞\uFE0E', b: '♝\uFE0E', r: '♜\uFE0E', q: '♛\uFE0E', k: '♚\uFE0E',
   };
   const CLASSIC = ['p', 'n', 'b', 'r', 'q', 'k'];
 
