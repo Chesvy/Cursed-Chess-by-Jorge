@@ -230,3 +230,54 @@ body.light .cell.dark { background: #8a5f35; }
   .editor-wrap .cell { width: 34px; height: 34px; }
   .editor-wrap .piece { font-size: 20px; }
 }
+
+/* ---- designer v2 ---- */
+.designer-card { max-width: 980px; }
+.tabs { display: flex; gap: 6px; margin: 14px 0 12px; }
+.tabs button { flex: 1; background: var(--panel); border: 1px solid #3a3352; border-radius: 8px; padding: 9px; cursor: pointer; color: var(--muted); }
+.tabs button.active { background: var(--acc); color: #fff; border-color: transparent; }
+.tabpage { padding-top: 4px; }
+
+.pixel-row, .moves-row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+.pixel-side, .moves-side { flex: 1; min-width: 190px; }
+
+.pixel-grid { display: grid; gap: 0; border: 2px solid #4a4370; border-radius: 6px; overflow: hidden; background: #1a1626; touch-action: none; }
+.pixel-grid .px {
+  width: 22px; height: 22px; box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,.06);
+}
+@media (max-width:720px){ .pixel-grid .px { width: 20px; height: 20px; } }
+.px-palette { display: flex; flex-wrap: wrap; gap: 6px; }
+.px-palette button { width: 30px; height: 30px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; }
+.px-palette button.active { border-color: #fff; box-shadow: 0 0 0 2px var(--acc); }
+.px-palette button.erase { background: repeating-conic-gradient(#444 0 25%, #111 0 50%) 0 0/8px 8px; }
+
+.moves-board { display: grid; gap: 0; border: 2px solid #4a4370; border-radius: 8px; overflow: hidden; position: relative; }
+.moves-board .mcell {
+  width: 46px; height: 46px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer;
+}
+.moves-board .mcell.light { background: #e8d8b8; }
+.moves-board .mcell.dark { background: #6b4a2b; }
+.moves-board .mcell.origin { outline: 2px solid var(--acc); outline-offset: -2px; }
+.moves-board .mcell.cursor { box-shadow: inset 0 0 0 2px #fff; }
+.mcell .piece-svg { width: 70%; height: 70%; }
+.mcell .markers { position: absolute; inset: 0; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; justify-content: center; pointer-events: none; }
+.mcell .markers .dot { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
+
+.moves-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.moves-tools button {
+  display: flex; align-items: center; gap: 6px; flex: 1 1 45%;
+  background: var(--panel); border: 1px solid #3a3352; border-radius: 8px; padding: 7px 9px; cursor: pointer; color: var(--ink); font-size: 13px;
+}
+.moves-tools button.active { border-color: var(--acc); box-shadow: 0 0 0 1px var(--acc); }
+.moves-tools .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.moves-tools .dot.x { background: transparent; color: var(--bad); line-height: 12px; font-size: 12px; }
+
+#variants-list .variant { border: 1px solid #3a3352; border-radius: 8px; padding: 8px; margin-bottom: 8px; background: var(--panel); }
+#variants-list .variant .vname { font-weight: 700; margin-bottom: 6px; }
+#variants-list .variant .vcolors { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#variants-list .variant label { margin: 0; display: flex; gap: 5px; align-items: center; text-transform: none; font-size: 12px; }
+#variants-list .variant input[type=color] { width: 34px; height: 28px; border: none; padding: 0; background: none; cursor: pointer; }
+
+.piece-svg { display: block; }

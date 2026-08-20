@@ -234,7 +234,15 @@
     const moves = def.moves || [];
     for (const m of moves) {
       const dx = m.dx, dy = m.dy;
-      // direction must match
+      if (m.canMove !== undefined || m.canRanged !== undefined) {
+        // NEW format
+        if (dy !== dr || dx !== dc) continue;
+        if (!m.canJump && pathBlocked(st, fr, fc, dy, dx)) continue;
+        if (forAttack) { if (m.canAttack || m.canRanged) return true; }
+        else if (m.canMove) return true;
+        continue;
+      }
+      // direction must match (legacy format)
       if (m.sliding) {
         // must be aligned
         if (!(dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy))) continue;
@@ -290,6 +298,22 @@
     return moves;
   }
 
+  function isAligned(dy, dx) {
+    return dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy);
+  }
+  // True if the straight line from (r,c) in direction (dy,dx) is blocked before target.
+  function pathBlocked(st, r, c, dy, dx) {
+    if (!isAligned(dy, dx)) return false; // leap, nothing in between
+    const sdy = Math.sign(dy), sdx = Math.sign(dx);
+    const steps = Math.max(Math.abs(dy), Math.abs(dx));
+    for (let k = 1; k < steps; k++) {
+      const rr = r + sdy * k, cc = c + sdx * k;
+      if (!inBounds(st, rr, cc)) return true;
+      if (st.grid[rr][cc].piece || cellIsVoid(st, rr, cc)) return true;
+    }
+    return false;
+  }
+
   function canLandOn(st, r, c, p, attacking) {
     if (!inBounds(st, r, c)) return false;
     const cell = st.grid[r][c];
@@ -310,7 +334,20 @@
       // custom piece
       const moves = def.moves || [];
       for (const m of moves) {
-        if (m.sliding) {
+        if (m.canMove !== undefined || m.canRanged !== undefined) {
+          // NEW designer format: per-cell flags
+          const dy = m.dy || 0, dx = m.dx || 0;
+          if (dy === 0 && dx === 0) continue;
+          const tr = r + dy, tc = c + dx;
+          if (!inBounds(st, tr, tc)) continue;
+          const blocked = m.canJump ? false : pathBlocked(st, r, c, dy, dx);
+          if (blocked) continue;
+          const occ = st.grid[tr][tc].piece;
+          const landOK = !cellIsVoid(st, tr, tc);
+          if (m.canMove && !occ && landOK) push(tr, tc, {});
+          if (m.canAttack && occ && occ.color !== p.color && landOK) push(tr, tc, { capture: true });
+          if (m.canRanged && occ && occ.color !== p.color && landOK) push(tr, tc, { ranged: true });
+        } else if (m.sliding) {
           const sdy = Math.sign(m.dy || 0), sdx = Math.sign(m.dx || 0);
           if (m.dy === 0 && m.dx === 0) continue;
           let rr = r + (m.dy ? sdy : 0), cc = c + (m.dx ? sdx : 0);
@@ -493,19 +530,26 @@
       st.captured.push({ piece: { id: 'ep', color: opp(piece.color), type: 'p' }, at: 'enpassant' });
     }
 
-    // move piece
-    st.grid[tr][tc].piece = piece;
-    st.grid[fr][fc].piece = null;
+    if (flags.ranged) {
+      // Ranged attack: capture the target WITHOUT moving there (the piece shoots
+      // from its current square and stays put).
+      if (captured) st.grid[tr][tc].piece = null;
+      st.lastMove = { from: [fr, fc], to: [tr, tc], ranged: true };
+    } else {
+      // move piece
+      st.grid[tr][tc].piece = piece;
+      st.grid[fr][fc].piece = null;
 
-    // castling rook move
-    if (flags.castle) {
-      const backRow = tr;
-      if (flags.castle === 'k') {
-        st.grid[backRow][fc + 1].piece = st.grid[backRow][fc + 3].piece;
-        st.grid[backRow][fc + 3].piece = null;
-      } else if (flags.castle === 'q') {
-        st.grid[backRow][fc - 1].piece = st.grid[backRow][fc - 4].piece;
-        st.grid[backRow][fc - 4].piece = null;
+      // castling rook move
+      if (flags.castle) {
+        const backRow = tr;
+        if (flags.castle === 'k') {
+          st.grid[backRow][fc + 1].piece = st.grid[backRow][fc + 3].piece;
+          st.grid[backRow][fc + 3].piece = null;
+        } else if (flags.castle === 'q') {
+          st.grid[backRow][fc - 1].piece = st.grid[backRow][fc - 4].piece;
+          st.grid[backRow][fc - 4].piece = null;
+        }
       }
     }
 

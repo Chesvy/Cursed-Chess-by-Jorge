@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cursed Chess by Jorge</title>
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 <div id="app">
@@ -160,30 +160,80 @@
 
   <!-- ============ DESIGNER ============ -->
   <section id="screen-designer" class="screen hidden">
-    <div class="card">
-      <button class="btn ghost back" data-nav="menu">← Menú</button>
-      <h2>Diseñar piezas</h2>
+    <div class="card wide designer-card">
+      <div class="topbar">
+        <button class="btn ghost back" data-nav="menu">← Menú</button>
+        <h2>Diseñar piezas</h2>
+        <button class="btn primary" id="des-save">💾 Guardar</button>
+      </div>
+      <div id="des-error" class="error"></div>
 
       <div class="designer-wrap">
         <div class="designer-list" id="designer-list"></div>
 
         <div class="designer-edit">
-          <label>Nombre</label>
-          <input type="text" id="des-name" placeholder="Ej: Hidra">
-          <label>Símbolo (emoji)</label>
-          <input type="text" id="des-symbol" placeholder="🦑">
-          <label>Habilidades</label>
-          <div id="des-abilities"></div>
-
-          <label>Movimientos</label>
-          <div id="des-moves" class="moves"></div>
-          <button class="btn small" id="des-addmove">+ Añadir movimiento</button>
-
           <div class="row">
-            <button class="btn primary" id="des-save">Guardar pieza</button>
+            <input type="text" id="des-name" placeholder="Nombre de la pieza">
             <button class="btn" id="des-new">Nueva</button>
           </div>
-          <div id="des-error" class="error"></div>
+
+          <div class="tabs" id="des-tabs">
+            <button class="active" data-tab="shape">🎨 Forma</button>
+            <button data-tab="moves">♟️ Movimientos</button>
+            <button data-tab="variants">🖌️ Variantes</button>
+          </div>
+
+          <!-- FORMA -->
+          <div class="tabpage" data-page="shape">
+            <div class="pixel-row">
+              <div id="pixel-grid" class="pixel-grid"></div>
+              <div class="pixel-side">
+                <label>Cuadrícula</label>
+                <select id="px-size">
+                  <option value="6">6×6</option>
+                  <option value="8" selected>8×8</option>
+                  <option value="10">10×10</option>
+                  <option value="12">12×12</option>
+                </select>
+                <label>Color</label>
+                <div id="px-palette" class="px-palette"></div>
+                <div class="row" style="margin-top:10px">
+                  <button class="btn small" id="px-clear">Vaciar</button>
+                </div>
+                <div class="hint">Pinta la forma de tu pieza. Puedes usar el borrador (✕). El cuadrado se ajusta a lo pintado.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MOVIMIENTOS -->
+          <div class="tabpage hidden" data-page="moves">
+            <div class="moves-row">
+              <div id="moves-board" class="moves-board"></div>
+              <div class="moves-side">
+                <label>Marcar con</label>
+                <div id="moves-tools" class="moves-tools">
+                  <button data-mtool="move" class="active"><span class="dot" style="background:#fff"></span> Mover</button>
+                  <button data-mtool="attack"><span class="dot" style="background:#4ade80"></span> Atacar</button>
+                  <button data-mtool="jump"><span class="dot" style="background:#60a5fa"></span> Saltar</button>
+                  <button data-mtool="ranged"><span class="dot" style="background:#facc15"></span> Distancia</button>
+                  <button data-mtool="erase"><span class="dot x">✕</span> Borrar</button>
+                </div>
+                <label>Borrar todo</label>
+                <button class="btn small" id="moves-clear">Limpiar movimientos</button>
+                <div class="hint">Haz clic sobre el tablero para marcar/desmarcar. También puedes usar las flechas para mover un cursor y las teclas 1=Mover, 2=Atacar, 3=Saltar, 4=Distancia.</div>
+                <div class="hint">● Mover: va a esa casilla. ● Atacar: captura aterrizando. ● Saltar: salta por encima. ● Distancia: dispara y captura sin moverse.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VARIANTES -->
+          <div class="tabpage hidden" data-page="variants">
+            <div id="variants-list"></div>
+            <div class="hint">Cada variante es una paleta de colores para la misma forma. 'Blanca' se usa cuando la pieza juega en blancas y 'Negra' cuando juega en negras. Edita cada color para crear variantes distintas.</div>
+          </div>
+
+          <label>Habilidades</label>
+          <div id="des-abilities"></div>
         </div>
       </div>
     </div>
@@ -215,10 +265,10 @@
 
 </div>
 
-<script src="js/pieces.js?v=4"></script>
-<script src="js/engine.js?v=4"></script>
-<script src="js/ai.js?v=4"></script>
-<script src="js/storage.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/pieces.js?v=5"></script>
+<script src="js/engine.js?v=5"></script>
+<script src="js/ai.js?v=5"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

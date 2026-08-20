@@ -94,3 +94,40 @@ test('belt pushes piece level amount', () => {
 });
 
 console.log('done');
+
+// 7. new-format custom piece: ranged attack, attack, jump
+test('new-format piece: ranged + attack + jump', () => {
+  const d = P.addDesign(P.newDesign()); d.name = 'Test';
+  d.moves = [
+    { dx: 0, dy: -1, canMove: true, canAttack: true, canJump: false, canRanged: false },
+    { dx: 0, dy: -2, canMove: false, canAttack: false, canJump: false, canRanged: true },
+    { dx: 1, dy: -2, canMove: true, canAttack: false, canJump: true, canRanged: false },
+  ];
+  // ranged
+  const st = E.buildState(8);
+  st.grid[5][3].piece = { id: 'a', color: 'white', type: d.id };
+  st.grid[3][3].piece = { id: 'e', color: 'black', type: 'p' };
+  let ms = E.getLegalMoves(st, 'white');
+  const ranged = ms.find(m => m.flags && m.flags.ranged);
+  if (!ranged) throw new Error('no ranged');
+  if (ranged.to[0] !== 3) throw new Error('ranged target wrong');
+  const res = E.makeMove(st, ranged);
+  if (res.state.grid[5][3].piece === null) throw new Error('piece moved on ranged');
+  if (res.state.grid[3][3].piece !== null) throw new Error('enemy not captured by ranged');
+
+  // attack (land capture) one step up
+  const st2 = E.buildState(8);
+  st2.grid[5][3].piece = { id: 'a', color: 'white', type: d.id };
+  st2.grid[4][3].piece = { id: 'e', color: 'black', type: 'p' };
+  const ms2 = E.getLegalMoves(st2, 'white');
+  const atk = ms2.find(m => m.to[0] === 4 && m.flags && m.flags.capture);
+  if (!atk) throw new Error('attack not generated');
+
+  // jump over a blocker
+  const st3 = E.buildState(8);
+  st3.grid[5][3].piece = { id: 'a', color: 'white', type: d.id };
+  st3.grid[4][3].piece = { id: 'blk', color: 'black', type: 'p' };
+  const ms3 = E.getLegalMoves(st3, 'white');
+  const jump = ms3.find(m => m.to[0] === 4 && m.to[1] === 1); // jump target (1,-2) => (4,1)
+  if (!jump) throw new Error('jump not generated');
+});

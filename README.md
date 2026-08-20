@@ -34,9 +34,14 @@ Puedes diseñar tableros y guardarlos (no se borran al cerrar la app):
 - Los tableros custom se guardan y cargan y se juegan igual que uno normal (2 personas o vs IA).
 
 ### 🧬 Diseñar piezas
-Crea piezas nuevas además de las originales:
-- Nombre y símbolo (emoji).
-- Movimientos a tu gusto (delx, dely, deslizante, salto, solo mover / solo capturar).
+Crea piezas nuevas dibujándolas a mano (estilo *paint*):
+- **Forma**: dibuja la pieza píxel a píxel en una cuadrícula (6×6 a 12×12), con colores y borrador.
+- **Variantes de color**: la misma forma puede tener varias paletas (p. ej. una para blancas y otra para negras).
+- **Movimientos**: la pieza aparece en el centro de un tablero y marcas con un clic (o con flechas + teclas) cada casilla según lo que pueda hacer, con puntos de colores que pueden combinarse en la misma casilla:
+  - ⚪ **Mover** → va a esa casilla.
+  - 🟢 **Atacar** → captura aterrizando en esa casilla.
+  - 🔵 **Saltar** → salta por encima de otras piezas.
+  - 🟡 **Ataque a distancia** → dispara y captura esa casilla sin moverse (opcional: también puede moverse ahí).
 - Habilidades: *Marina*, *Fantasma* (ignora bloqueos), *Pesada* (no la empujan cintas ni agujeros).
 - Las piezas se guardan y se pueden usar en cualquier partida o tablero.
 

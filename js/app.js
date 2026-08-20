@@ -191,14 +191,7 @@
         applyFeatureClass(div, cell.feature, piecePx);
 
         if (cell.piece) {
-          const p = div;
-          const sym = pieceSymbol(cell.piece);
-          const sp = document.createElement('span');
-          sp.className = 'piece ' + (cell.piece.color === 'white' ? 'w' : 'b');
-          sp.style.fontSize = piecePx + 'px';
-          sp.textContent = sym;
-          div.appendChild(sp);
-          void p;
+          div.appendChild(pieceElement(cell.piece, piecePx));
         }
         div.dataset.r = r; div.dataset.c = c;
 
@@ -233,8 +226,8 @@
     const capBox = $('captured');
     capBox.innerHTML = '';
     if (GAME.captured && GAME.captured.length) {
-      const w = GAME.captured.filter((x) => x.piece.color === 'white').map((x) => pieceSymbol(x.piece)).join(' ');
-      const b = GAME.captured.filter((x) => x.piece.color === 'black').map((x) => pieceSymbol(x.piece)).join(' ');
+      const w = GAME.captured.filter((x) => x.piece.color === 'white').map((x) => pieceTextSymbol(x.piece)).join(' ');
+      const b = GAME.captured.filter((x) => x.piece.color === 'black').map((x) => pieceTextSymbol(x.piece)).join(' ');
       capBox.innerHTML = 'Capturadas — Bl: ' + (w || '·') + '   Negras: ' + (b || '·');
     }
 
@@ -265,7 +258,37 @@
   function pieceSymbol(piece) {
     if (P.isClassic(piece.type)) return P.PIECE_SYMBOLS[piece.type];
     const d = P.getDesign(piece.type);
-    return d ? d.symbol : '❓';
+    return d ? (d.symbol || '❓') : '❓';
+  }
+
+  // Text symbol used in captured lists / fallbacks. Pixel pieces use a simple dot.
+  function pieceTextSymbol(piece) {
+    if (P.isClassic(piece.type)) return P.PIECE_SYMBOLS[piece.type];
+    const d = P.getDesign(piece.type);
+    if (d && d.pixels) return '◉';
+    return d ? (d.symbol || '◉') : '◉';
+  }
+
+  // DOM element representing a piece. Pixel pieces render as SVG; classic as glyph.
+  function pieceElement(piece, sizePx) {
+    const sp = document.createElement('span');
+    sp.className = 'piece ' + (piece.color === 'white' ? 'w' : 'b');
+    if (P.isClassic(piece.type)) {
+      sp.style.fontSize = sizePx + 'px';
+      sp.textContent = P.PIECE_SYMBOLS[piece.type];
+    } else {
+      const d = P.getDesign(piece.type);
+      if (d && d.pixels && d.pixels.length) {
+        sp.innerHTML = P.pieceToSVG(d, piece.color, sizePx);
+      } else if (d) {
+        sp.style.fontSize = sizePx + 'px';
+        sp.textContent = d.symbol || '❓';
+      } else {
+        sp.style.fontSize = sizePx + 'px';
+        sp.textContent = '❓';
+      }
+    }
+    return sp;
   }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function colorEs(c) { return c === 'white' ? 'Blancas' : 'Negras'; }
@@ -527,11 +550,7 @@
       div.style.height = cellPx + 'px';
       applyFeatureClass(div, cell.feature, piecePx);
       if (cell.piece) {
-        const sp = document.createElement('span');
-        sp.className = 'piece ' + (cell.piece.color === 'white' ? 'w' : 'b');
-        sp.style.fontSize = piecePx + 'px';
-        sp.textContent = pieceSymbol(cell.piece);
-        div.appendChild(sp);
+        div.appendChild(pieceElement(cell.piece, piecePx));
       }
       div.dataset.r = r; div.dataset.c = c;
       div.addEventListener('click', (ev) => paintCell(r, c));
@@ -601,24 +620,43 @@
   });
 
   /* ====================================================================
-   *  DESIGNER
+   *  DESIGNER (pixel-art + movement map)
    * ==================================================================== */
-  let DES = null; // current design being edited
+  let DES = null;        // current design being edited
+  let pxTool = 0;        // selected pixel color index (0 = eraser)
+  let mTool = 'move';    // move | attack | jump | ranged | erase
+  let mCursor = null;    // {r,c} cursor on the moves board
+  let MOVES_R = 7;       // moves board size (7x7, piece at center)
 
   function openDesigner() {
     fillPieceTypeSelect();
     DES = null;
     renderDesignerList();
     newDesign();
+    bindDesignerTabs();
     show('screen-designer');
   }
 
   function newDesign() {
-    DES = { name: '', symbol: '🧿', moves: [{ dx: 1, dy: 0, sliding: false, mode: 'both', jump: false }], abilities: [] };
-    renderDesignerEdit();
+    DES = P.newDesign();
+    pxTool = 0;
+    mTool = 'move';
+    mCursor = null;
+    $('des-name').value = '';
+    renderDesignerAll();
+  }
+
+  function renderDesignerAll() {
+    renderPixelGrid();
+    renderPixelPalette();
+    renderMovesBoard();
+    renderMovesTools();
+    renderVariants();
+    renderAbilities();
     renderDesignerList();
   }
 
+  /* ---------- list ---------- */
   function renderDesignerList() {
     const box = $('designer-list');
     box.innerHTML = '<h3 style="margin-top:0">Piezas</h3>';
@@ -627,71 +665,260 @@
     items.forEach((d) => {
       const div = document.createElement('div');
       div.className = 'item' + (DES && DES.id === d.id ? ' active' : '');
-      div.innerHTML = '<span style="font-size:24px">' + d.symbol + '</span> <b>' + d.name + '</b>';
+      let preview = '<span style="font-size:22px">' + (d.symbol || '◉') + '</span>';
+      if (d.pixels && d.pixels.length) {
+        preview = '<span style="display:inline-flex">' + P.pieceToSVG(d, 'white', 26) + '</span>';
+      }
+      div.innerHTML = preview + ' <b>' + d.name + '</b>';
       const x = document.createElement('span'); x.className = 'x'; x.textContent = '🗑';
       x.onclick = (e) => { e.stopPropagation(); if (confirm('Borrar pieza?')) { P.removeDesign(d.id); S.saveDesigns(); renderDesignerList(); if (DES && DES.id === d.id) newDesign(); } };
       div.appendChild(x);
-      div.onclick = () => { DES = JSON.parse(JSON.stringify(d)); renderDesignerEdit(); renderDesignerList(); };
+      div.onclick = () => { DES = JSON.parse(JSON.stringify(d)); pxTool = 0; mTool = 'move'; mCursor = null; $('des-name').value = DES.name; renderDesignerAll(); };
       box.appendChild(div);
     });
     const add = document.createElement('button'); add.className = 'btn small block'; add.textContent = '+ Nueva pieza'; add.onclick = newDesign;
     box.appendChild(add);
   }
 
-  function renderDesignerEdit() {
-    $('des-name').value = DES.name;
-    $('des-symbol').value = DES.symbol;
-    // abilities
+  /* ---------- tabs ---------- */
+  function bindDesignerTabs() {
+    const box = $('des-tabs');
+    box.querySelectorAll('button').forEach((b) => {
+      b.onclick = () => {
+        box.querySelectorAll('button').forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        const tab = b.getAttribute('data-tab');
+        document.querySelectorAll('#screen-designer .tabpage').forEach((p) => {
+          p.classList.toggle('hidden', p.getAttribute('data-page') !== tab);
+        });
+      };
+    });
+  }
+
+  /* ---------- pixel art ---------- */
+  let pxPainting = false;
+  function renderPixelGrid() {
+    const grid = $('pixel-grid');
+    grid.innerHTML = '';
+    const px = DES.px || 8;
+    grid.style.gridTemplateColumns = 'repeat(' + px + ',auto)';
+    for (let i = 0; i < px; i++) {
+      for (let j = 0; j < px; j++) {
+        const d = document.createElement('div');
+        d.className = 'px';
+        const idx = (DES.pixels[i] || [])[j] || 0;
+        if (idx) d.style.background = P.PIXEL_COLORS_HEX[idx];
+        d.dataset.i = i; d.dataset.j = j;
+        d.addEventListener('pointerdown', (e) => { e.preventDefault(); pxPainting = true; paintPixel(i, j); });
+        d.addEventListener('pointerenter', () => { if (pxPainting) paintPixel(i, j); });
+        d.addEventListener('pointerup', () => { pxPainting = false; });
+        grid.appendChild(d);
+      }
+    }
+    document.addEventListener('pointerup', () => { pxPainting = false; });
+  }
+  function paintPixel(i, j) {
+    if (!DES.pixels[i]) DES.pixels[i] = Array(DES.px).fill(0);
+    DES.pixels[i][j] = pxTool;
+    const d = $('pixel-grid').querySelector('[data-i="' + i + '"][data-j="' + j + '"]');
+    if (d) d.style.background = pxTool ? P.PIXEL_COLORS_HEX[pxTool] : 'transparent';
+  }
+  function renderPixelPalette() {
+    const pal = $('px-palette');
+    pal.innerHTML = '';
+    // eraser
+    const er = document.createElement('button');
+    er.className = 'erase' + (pxTool === 0 ? ' active' : '');
+    er.title = 'Borrador';
+    er.onclick = () => { pxTool = 0; renderPixelPalette(); };
+    pal.appendChild(er);
+    P.PIXEL_INDICES.forEach((idx) => {
+      const b = document.createElement('button');
+      b.style.background = P.PIXEL_COLORS_HEX[idx];
+      if (pxTool === idx) b.classList.add('active');
+      b.title = P.PIXEL_COLORS[idx].n;
+      b.onclick = () => { pxTool = idx; renderPixelPalette(); };
+      pal.appendChild(b);
+    });
+  }
+  $('px-size').addEventListener('change', () => {
+    const ns = parseInt($('px-size').value, 10) || 8;
+    resizePixels(ns);
+  });
+  $('px-clear').addEventListener('click', () => {
+    DES.pixels = Array.from({ length: DES.px }, () => Array(DES.px).fill(0));
+    renderPixelGrid();
+  });
+  function resizePixels(ns) {
+    const old = DES.pixels || [];
+    const oldSize = DES.px || 8;
+    const np = Array.from({ length: ns }, () => Array(ns).fill(0));
+    const off = Math.floor((ns - oldSize) / 2);
+    for (let i = 0; i < oldSize; i++) for (let j = 0; j < oldSize; j++) {
+      if (old[i] && old[i][j] && i + off >= 0 && i + off < ns && j + off >= 0 && j + off < ns) {
+        np[i + off][j + off] = old[i][j];
+      }
+    }
+    DES.px = ns; DES.pixels = np;
+    renderPixelGrid();
+  }
+
+  /* ---------- movement map ---------- */
+  const MOVES_COLORS = { move: '#ffffff', attack: '#4ade80', jump: '#60a5fa', ranged: '#facc15' };
+
+  function moveEntry(dy, dx) {
+    return (DES.moves || []).find((m) => m.dy === dy && m.dx === dx) || null;
+  }
+  function getMove(dy, dx) {
+    let m = moveEntry(dy, dx);
+    if (!m) { m = { dy, dx, canMove: false, canAttack: false, canJump: false, canRanged: false }; DES.moves.push(m); }
+    return m;
+  }
+  function renderMovesBoard() {
+    const board = $('moves-board');
+    board.innerHTML = '';
+    board.style.gridTemplateColumns = 'repeat(' + MOVES_R + ',auto)';
+    const center = Math.floor(MOVES_R / 2);
+    for (let r = 0; r < MOVES_R; r++) {
+      for (let c = 0; c < MOVES_R; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'mcell ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+        const dy = r - center, dx = c - center;
+        if (dy === 0 && dx === 0) {
+          cell.classList.add('origin');
+          const svg = P.pieceToSVG(DES, 'white', 40);
+          if (svg) { const s = document.createElement('span'); s.className = 'piece-svg'; s.innerHTML = svg; cell.appendChild(s); }
+        } else {
+          const m = moveEntry(dy, dx);
+          if (m) {
+            const mk = document.createElement('div'); mk.className = 'markers';
+            [['canMove','move'],['canAttack','attack'],['canJump','jump'],['canRanged','ranged']].forEach(([k,label]) => {
+              if (m[k]) {
+                const dot = document.createElement('span');
+                dot.className = 'dot';
+                dot.style.background = MOVES_COLORS[label];
+                mk.appendChild(dot);
+              }
+            });
+            if (mk.childNodes.length) cell.appendChild(mk);
+          }
+        }
+        if (mCursor && mCursor.r === r && mCursor.c === c) cell.classList.add('cursor');
+        cell.dataset.dy = dy; cell.dataset.dx = dx;
+        cell.addEventListener('click', () => paintMove(dy, dx));
+        board.appendChild(cell);
+      }
+    }
+  }
+  function paintMove(dy, dx) {
+    if (dy === 0 && dx === 0) return;
+    if (mTool === 'erase') {
+      const i = DES.moves.findIndex((m) => m.dy === dy && m.dx === dx);
+      if (i >= 0) DES.moves.splice(i, 1);
+    } else {
+      const m = getMove(dy, dx);
+      const flag = 'can' + mTool.charAt(0).toUpperCase() + mTool.slice(1); // canMove/canAttack/canJump/canRanged
+      m[flag] = !m[flag];
+      // remove empty entry
+      if (!m.canMove && !m.canAttack && !m.canJump && !m.canRanged) {
+        const i = DES.moves.indexOf(m); if (i >= 0) DES.moves.splice(i, 1);
+      }
+    }
+    renderMovesBoard();
+  }
+  function renderMovesTools() {
+    document.querySelectorAll('#moves-tools button').forEach((b) => {
+      b.classList.toggle('active', b.getAttribute('data-mtool') === mTool);
+    });
+  }
+  document.querySelectorAll('#moves-tools button').forEach((b) => {
+    b.addEventListener('click', () => { mTool = b.getAttribute('data-mtool'); renderMovesTools(); });
+  });
+  $('moves-clear').addEventListener('click', () => { DES.moves = []; renderMovesBoard(); });
+  // keyboard support on moves board
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('screen-designer').classList.contains('hidden')) return;
+    const page = document.querySelector('#screen-designer .tabpage[data-page="moves"]');
+    if (!page || page.classList.contains('hidden')) return;
+    const center = Math.floor(MOVES_R / 2);
+    if (!mCursor) mCursor = { r: center - 1, c: center };
+    const step = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key];
+    if (step) {
+      e.preventDefault();
+      mCursor.r = Math.min(MOVES_R - 1, Math.max(0, mCursor.r + step[0]));
+      mCursor.c = Math.min(MOVES_R - 1, Math.max(0, mCursor.c + step[1]));
+      renderMovesBoard();
+    } else if (['1','2','3','4','5'].includes(e.key)) {
+      const map = { '1': 'move', '2': 'attack', '3': 'jump', '4': 'ranged', '5': 'erase' };
+      mTool = map[e.key]; renderMovesTools();
+      if (mCursor) paintMove(mCursor.r - center, mCursor.c - center);
+    }
+  });
+
+  /* ---------- variants ---------- */
+  function renderVariants() {
+    const box = $('variants-list');
+    box.innerHTML = '';
+    if (!DES.variants || !DES.variants.length) {
+      DES.variants = [
+        { name: 'Blanca', colors: [null].concat(P.PIXEL_COLORS.slice(1).map((c) => c.hex)) },
+        { name: 'Negra', colors: [null].concat(P.PIXEL_COLORS.slice(1).map((c) => c.hex)) },
+      ];
+    }
+    DES.variants.forEach((v, vi) => {
+      const d = document.createElement('div'); d.className = 'variant';
+      d.innerHTML = '<div class="vname">' + v.name + '</div>';
+      const colors = document.createElement('div'); colors.className = 'vcolors';
+      P.PIXEL_INDICES.forEach((idx) => {
+        if (!v.colors[idx]) v.colors[idx] = P.PIXEL_COLORS_HEX[idx];
+        const lab = document.createElement('label');
+        lab.appendChild(document.createTextNode(P.PIXEL_COLORS[idx].n + ': '));
+        const inp = document.createElement('input');
+        inp.type = 'color'; inp.value = v.colors[idx];
+        inp.onchange = () => { v.colors[idx] = inp.value; renderMovesBoard(); renderDesignerList(); };
+        lab.appendChild(inp);
+        colors.appendChild(lab);
+      });
+      // add variant / remove
+      d.appendChild(colors);
+      box.appendChild(d);
+    });
+    const addV = document.createElement('button');
+    addV.className = 'btn small block'; addV.textContent = '+ Añadir variante';
+    addV.onclick = () => {
+      const nm = prompt('Nombre de la variante (ej: Dorada):');
+      if (!nm) return;
+      DES.variants.push({ name: nm, colors: [null].concat(P.PIXEL_COLORS.slice(1).map((c) => c.hex)) });
+      renderVariants();
+    };
+    box.appendChild(addV);
+  }
+
+  /* ---------- abilities ---------- */
+  function renderAbilities() {
     const ab = $('des-abilities');
     ab.innerHTML = '';
+    if (!DES.abilities) DES.abilities = [];
     P.ABILITIES.forEach((a) => {
       const lab = document.createElement('label');
       const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = a.id;
-      cb.checked = (DES.abilities || []).includes(a.id);
+      cb.checked = DES.abilities.includes(a.id);
+      cb.onchange = () => {
+        if (cb.checked) DES.abilities.push(a.id); else DES.abilities = DES.abilities.filter((x) => x !== a.id);
+      };
       lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + a.name));
       ab.appendChild(lab);
     });
-    // moves
-    const mv = $('des-moves');
-    mv.innerHTML = '';
-    DES.moves.forEach((m, i) => {
-      const row = document.createElement('div'); row.className = 'mv';
-      row.innerHTML = '<span>Δ</span>';
-      const di = document.createElement('input'); di.type = 'number'; di.value = m.dy; di.title = 'Filas (dy)';
-      di.onchange = () => { m.dy = parseInt(di.value, 10) || 0; };
-      const dj = document.createElement('input'); dj.type = 'number'; dj.value = m.dx; dj.title = 'Columnas (dx)';
-      dj.onchange = () => { m.dx = parseInt(dj.value, 10) || 0; };
-      const slide = mkCheck('Desliza', m.sliding, (v) => { m.sliding = v; });
-      const jump = mkCheck('Salta', m.jump, (v) => { m.jump = v; });
-      const mode = document.createElement('select');
-      mode.innerHTML = '<option value="both">Mover y capturar</option><option value="move">Solo mover</option><option value="capture">Solo capturar</option>';
-      mode.value = m.mode; mode.onchange = () => { m.mode = mode.value; };
-      const del = document.createElement('button'); del.className = 'btn small'; del.textContent = '✕';
-      del.onclick = () => { DES.moves.splice(i, 1); renderDesignerEdit(); };
-      row.appendChild(di); row.appendChild(dj); row.appendChild(slide); row.appendChild(jump); row.appendChild(mode); row.appendChild(del);
-      mv.appendChild(row);
-    });
   }
 
-  function mkCheck(label, val, onchange) {
-    const lab = document.createElement('label'); lab.style.cssText = 'display:flex;gap:4px;margin:0';
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = val;
-    cb.onchange = () => onchange(cb.checked);
-    lab.appendChild(cb); lab.appendChild(document.createTextNode(label));
-    return lab;
-  }
-
-  $('des-addmove').addEventListener('click', () => {
-    DES.moves.push({ dx: 1, dy: 0, sliding: false, mode: 'both', jump: false });
-    renderDesignerEdit();
-  });
+  /* ---------- save ---------- */
+  $('des-name').addEventListener('input', () => { DES.name = $('des-name').value; });
   $('des-new').addEventListener('click', newDesign);
   $('des-save').addEventListener('click', () => {
-    if (!$('des-name').value.trim()) { $('des-error').textContent = 'Pon un nombre.'; return; }
-    if (!DES.moves.some((m) => m.dx !== 0 || m.dy !== 0)) { $('des-error').textContent = 'Añade al menos un movimiento.'; return; }
+    if (!$('des-name').value.trim()) { $('des-error').textContent = 'Pon un nombre a la pieza.'; return; }
+    if (!DES.moves.length) { $('des-error').textContent = 'Marca al menos un movimiento en la pestaña Movimientos.'; return; }
     DES.name = $('des-name').value.trim();
-    DES.symbol = $('des-symbol').value || '🧿';
-    DES.abilities = Array.from($('des-abilities').querySelectorAll('input:checked')).map((x) => x.value);
+    DES.symbol = '◉';
     P.addDesign(DES);
     S.saveDesigns();
     fillPieceTypeSelect();

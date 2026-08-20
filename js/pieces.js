@@ -93,6 +93,78 @@
     return { id: d.id, name: d.name, symbol: d.symbol, abilities: d.abilities || [] };
   }
 
+  /* =====================================================================
+   *  PIXEL-ART piece model (new designer)
+   *  design = {
+   *    id, name,
+   *    px: 8,                     // square grid of px x px pixels
+   *    pixels: [ [idx,...], ...], // px rows; 0 = transparent, else index into PIXEL_COLORS
+   *    variants: [ { name:'Blanca', colors:[null, hex...] },
+   *                { name:'Negra',  colors:[null, hex...] } ],
+   *    moves: [ {dx,dy, canMove, canAttack, canJump, canRanged} ],
+   *    abilities: []
+   *  }
+   *  ===================================================================== */
+  const PIXEL_COLORS = [
+    null,                       // 0 = transparent
+    { n: 'Negro', hex: '#1c1c1c' },
+    { n: 'Blanco', hex: '#ffffff' },
+    { n: 'Rojo', hex: '#e11d48' },
+    { n: 'Verde', hex: '#16a34a' },
+    { n: 'Azul', hex: '#2563eb' },
+    { n: 'Amarillo', hex: '#facc15' },
+    { n: 'Marrón', hex: '#92400e' },
+    { n: 'Gris', hex: '#6b7280' },
+    { n: 'Naranja', hex: '#ea580c' },
+    { n: 'Púrpura', hex: '#7c3aed' },
+  ];
+  // usable swatch indices (1..9)
+  const PIXEL_INDICES = [1,2,3,4,5,6,7,8,9,10];
+  const PIXEL_COLORS_HEX = PIXEL_COLORS.map((c) => (c ? c.hex : null));
+
+  function newDesign() {
+    const px = 8;
+    const pixels = Array.from({ length: px }, () => Array(px).fill(0));
+    const variants = [
+      { name: 'Blanca', colors: [null].concat(PIXEL_COLORS.slice(1).map((c) => c.hex)) },
+      { name: 'Negra', colors: [null].concat(PIXEL_COLORS.slice(1).map((c) => c.hex)) },
+    ];
+    return { id: newId(), name: '', px, pixels, variants, moves: [], abilities: [] };
+  }
+
+  // Get the color array to render for a piece of a given team color.
+  function designVariant(design, pieceColor) {
+    if (!design || !design.variants) return null;
+    const want = pieceColor === 'white' ? 'Blanca' : 'Negra';
+    const v = design.variants.find((x) => x.name === want) || design.variants[0];
+    return v ? v.colors : null;
+  }
+
+  // Build an SVG string for a pixel design at `size` px.
+  function pieceToSVG(design, pieceColor, size) {
+    const px = design.px || 8;
+    const g = design.pixels || [];
+    const colors = designVariant(design, pieceColor);
+    // bounding box of painted pixels
+    let minR = px, maxR = -1, minC = px, maxC = -1;
+    for (let i = 0; i < px; i++) for (let j = 0; j < px; j++) {
+      if (g[i] && g[i][j]) { if (i < minR) minR = i; if (i > maxR) maxR = i; if (j < minC) minC = j; if (j > maxC) maxC = j; }
+    }
+    if (maxR < 0) return ''; // empty
+    const pr = maxR - minR + 1, pc = maxC - minC + 1;
+    const pad = 1;
+    const cw = 100 / (pc + pad * 2), ch = 100 / (pr + pad * 2);
+    let rects = '';
+    for (let i = minR; i <= maxR; i++) for (let j = minC; j <= maxC; j++) {
+      const idx = g[i][j];
+      if (!idx) continue;
+      const col = (colors && colors[idx]) || PIXEL_COLORS_HEX[idx] || '#333';
+      const x = (j - minC + pad) * cw, y = (i - minR + pad) * ch;
+      rects += '<rect x="' + x.toFixed(2) + '" y="' + y.toFixed(2) + '" width="' + cw.toFixed(2) + '" height="' + ch.toFixed(2) + '" fill="' + col + '"/>';
+    }
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100" shape-rendering="crispEdges">' + rects + '</svg>';
+  }
+
   /* Ability helpers */
   const ABILITIES = [
     { id: 'marine', name: 'Marina (se mueve sobre agua)' },
@@ -109,6 +181,7 @@
     isClassic, isCustom,
     addDesign, getDesign, allDesigns, removeDesign, importDesigns, defaultDesigns,
     hasAbility, ABILITIES, designSummary, newId,
+    PIXEL_COLORS, PIXEL_INDICES, PIXEL_COLORS_HEX, newDesign, designVariant, pieceToSVG,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = root.ChessPieces;
