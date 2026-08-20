@@ -210,10 +210,10 @@
     const info = $('game-info');
     $('game-title').textContent = GAME.name + '  •  ' + GAME.boardName;
     if (GAME.over) {
-      if (GAME.winner) info.textContent = '🏆 ¡Ha ganado ' + cap(GAME.winner) + '!';
+      if (GAME.winner) info.textContent = '🏆 ¡Han ganado las ' + colorEs(GAME.winner) + '!';
       else info.textContent = 'Empate';
     } else {
-      info.innerHTML = 'Turno: <b>' + cap(GAME.turn) + '</b>' +
+      info.innerHTML = 'Turno: <b>' + colorEs(GAME.turn) + '</b>' +
         (GAME.players[GAME.turn] === 'ai' ? ' (IA)' : '') + (aiThinking ? ' — pensando…' : '');
     }
     // captured
@@ -253,6 +253,7 @@
     return d ? d.symbol : '❓';
   }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function colorEs(c) { return c === 'white' ? 'Blancas' : 'Negras'; }
 
   function renderClocks() {
     if (!GAME.timer.enabled) {
@@ -422,7 +423,7 @@
       const nm = document.createElement('div'); nm.className = 'name'; nm.textContent = it.name || 'Sin nombre';
       const sub = document.createElement('div'); sub.className = 'sub';
       if (kind === 'game') {
-        sub.textContent = (it.boardName || 'Clásico') + ' • ' + it.size + '×' + it.size + ' • turno ' + cap(it.turn) + (it.over ? ' • FIN' : '') + ' • ' + new Date(it.savedAt).toLocaleString();
+        sub.textContent = (it.boardName || 'Clásico') + ' • ' + it.size + '×' + it.size + ' • turno de las ' + colorEs(it.turn) + (it.over ? ' • FIN' : '') + ' • ' + new Date(it.savedAt).toLocaleString();
       } else {
         sub.textContent = it.size + '×' + it.size + ' • ' + new Date(it.savedAt).toLocaleString();
       }
