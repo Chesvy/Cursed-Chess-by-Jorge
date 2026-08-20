@@ -134,6 +134,7 @@
     renderGame();
     show('screen-game');
     startClock();
+    autosave();
     if (GAME.players[GAME.turn] === 'ai') aiTurn();
   }
 
@@ -288,6 +289,13 @@
     return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
   }
 
+  // Auto-save the active game so a page reload resumes it (not lost).
+  function autosave() {
+    if (!GAME) return;
+    if (GAME.over) S.clearActiveGame();
+    else S.saveActiveGame(GAME);
+  }
+
   function startClock() {
     stopClock();
     if (!GAME.timer.enabled) return;
@@ -344,6 +352,7 @@
     addIncrement();
     selected = null; legalMoves = [];
     renderGame();
+    autosave();
     if (!GAME.over && GAME.players[GAME.turn] === 'ai') {
       aiThinking = true; renderGame();
       setTimeout(() => { doAiMove(); }, 120);
@@ -370,6 +379,7 @@
     addIncrement();
     selected = null; legalMoves = [];
     renderGame();
+    autosave();
     if (!GAME.over && GAME.players[GAME.turn] === 'ai') {
       aiThinking = true;
       setTimeout(() => doAiMove(), 120);
@@ -466,6 +476,7 @@
     GAME = st; selected = null; legalMoves = [];
     GAME.__orig = { size: st.size, name: st.name, players: Object.assign({}, st.players), timer: Object.assign({}, st.timer), aiLevel: st.aiLevel, boardName: st.boardName, grid: deepGrid(saved.grid) };
     renderGame(); show('screen-game'); startClock();
+    autosave();
     if (!GAME.over && GAME.players[GAME.turn] === 'ai') aiTurn();
   }
 
@@ -731,6 +742,14 @@
     document.querySelector('.editor-panel').insertBefore(baseRow, document.querySelector('.editor-panel').firstChild);
 
     show('screen-menu');
+
+    // Resume an auto-saved in-progress game (if any) after a page reload.
+    const active = S.getActiveGame();
+    if (active && !active.over) {
+      if (confirm('¿Reanudar la partida "' + (active.name || 'guardada') + '" que tenías en curso?')) {
+        loadGame(active);
+      }
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);

@@ -10,6 +10,7 @@
     boards: 'cc_boards',
     designs: 'cc_designs',
     settings: 'cc_settings',
+    active: 'cc_active',
   };
 
   const mem = {}; // fallback when localStorage unavailable
@@ -119,6 +120,17 @@
     return list;
   }
 
+  /* ---- Active (autosave) game ---- */
+  function saveActiveGame(st) {
+    write(KEYS.active, serializeGame(st));
+  }
+  function getActiveGame() {
+    return read(KEYS.active, null);
+  }
+  function clearActiveGame() {
+    write(KEYS.active, null);
+  }
+
   /* ---- Settings ---- */
   function getSettings() {
     return read(KEYS.settings, { theme: 'dark' });
@@ -131,6 +143,7 @@
     saveGame, listGames, getGame, deleteGame, serializeGame,
     saveBoard, listBoards, getBoard, deleteBoard,
     saveDesigns, loadDesigns, getSettings, saveSettings,
+    saveActiveGame, getActiveGame, clearActiveGame,
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = root.ChessStorage;

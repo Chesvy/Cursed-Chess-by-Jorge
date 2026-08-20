@@ -42,6 +42,7 @@ Crea piezas nuevas además de las originales:
 
 ### 💾 Guardar / cargar
 - Guarda y carga partidas en cualquier momento.
+- **Autoguardado**: la partida en curso se guarda sola tras cada movimiento; si recargas la página, se te ofrece reanudarla.
 - Guarda y carga tableros y piezas custom.
 - Todo se conserva al cerrar la aplicación (almacenamiento local del navegador).
 
