@@ -51,6 +51,13 @@ const path = require('path');
     'cap uses a ::after ring marker (rule: ' + (capAfter ? capAfter[0].trim() : 'MISSING') + ')');
   // Ensure the old full-square fill is gone
   assert(css.indexOf('inset 0 0 0 999px') < 0, 'no full-square inset fill remains in CSS');
+  // Selection must NOT use a rectangular outline/border around the piece;
+  // it must be a soft translucent ::before overlay that keeps the board continuous.
+  assert(!/\.cell\.sel \.piece\s*\{[^}]*outline/.test(css), 'selected piece has no outline rectangle');
+  assert(/\.cell\.sel::before\s*\{[^}]*background:\s*rgba\(250,204,21/.test(css),
+    'selected square uses a soft ::before tint overlay');
+  // Last-move must not use box-shadow borders either (they frame individual squares).
+  assert(!/\.cell\.last-(from|to)\s*\{[^}]*box-shadow/.test(css), 'last-move uses no box-shadow borders');
 
   console.log('\n--- runtime errors ---');
   if (errors.length) { console.log(errors.join('\n')); process.exit(1); }

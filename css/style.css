@@ -137,13 +137,24 @@ input[type=range] { width: 80%; vertical-align: middle; }
 .belt .feat-label { font-size: 13px; }
 
 .piece {
-  font-size: 42px; line-height: 1; z-index: 2; pointer-events: none;
+  position: relative; z-index: 2;
+  font-size: 42px; line-height: 1; pointer-events: none;
   text-shadow: 0 2px 3px rgba(0,0,0,.5);
 }
 .piece.w { color: #fbf6ee; -webkit-text-stroke: 1px #222; }
 .piece.b { color: #1c1c1c; -webkit-text-stroke: 1px #999; }
 
-.cell.sel .piece { outline: 3px solid var(--sel); outline-offset: -3px; border-radius: 6px; }
+/* Selection & last-move highlights are soft translucent overlays (::before).
+   NO rectangular outlines or box-shadow borders, so the checkerboard stays a
+   single continuous surface and the board never looks "separated into tiles". */
+.cell::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+}
+.cell.sel::before { background: rgba(250,204,21,.32); }
+.cell.last-from::before { background: rgba(34,211,238,.18); }
+.cell.last-to::before { background: rgba(34,211,238,.28); }
+.cell.sel.last-to::before { background: rgba(250,204,21,.32); }
+
 /* Move/capture hints as small centered markers so the checkerboard stays
    continuous (no "separated squares" look). The square color is never covered. */
 .cell.hint::after, .cell.cap::after {
@@ -152,14 +163,12 @@ input[type=range] { width: 80%; vertical-align: middle; }
   border-radius: 50%; pointer-events: none; z-index: 1;
 }
 .cell.hint::after {
-  width: 30%; height: 30%; background: rgba(74,222,128,.65);
+  width: 30%; height: 30%; background: rgba(74,222,128,.7);
 }
 .cell.cap::after {
-  width: 62%; height: 62%; border: 3px solid rgba(248,113,113,.9);
-  background: rgba(248,113,113,.15);
+  width: 62%; height: 62%; border: 3px solid rgba(248,113,113,.95);
+  background: rgba(248,113,113,.18);
 }
-.cell.last-from { box-shadow: inset 0 0 0 3px var(--acc2); }
-.cell.last-to { box-shadow: inset 0 0 0 3px var(--acc2); }
 .cell.dim { opacity: .4; }
 
 .ginfo { margin-top: 12px; font-size: 16px; min-height: 24px; text-align: center; }
