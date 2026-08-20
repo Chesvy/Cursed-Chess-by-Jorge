@@ -41,12 +41,16 @@ const path = require('path');
   const fs = require('fs');
   const css = fs.readFileSync(path.join(__dirname, 'css/style.css'), 'utf8');
   assert(/.promo \.piece[^}]*pointer-events\s*:\s*auto/.test(css), 'CSS has .promo .piece { pointer-events: auto }');
-  const hintRule = css.match(/\.cell\.hint\s*\{[^}]*\}/);
-  const capRule = css.match(/\.cell\.cap\s*\{[^}]*\}/);
-  assert(!!hintRule && hintRule[0].indexOf('box-shadow: inset') >= 0 && hintRule[0].indexOf('background: rgba') < 0,
-    'hint uses box-shadow overlay, not background (rule: ' + (hintRule ? hintRule[0] : 'MISSING') + ')');
-  assert(!!capRule && capRule[0].indexOf('box-shadow: inset') >= 0,
-    'cap uses box-shadow overlay (rule: ' + (capRule ? capRule[0] : 'MISSING') + ')');
+  // Move/capture hints must be small markers (::after), NOT a full-square fill,
+  // so the checkerboard stays continuous and the board doesn't look "separated".
+  const hintAfter = css.match(/\.cell\.hint::after\s*\{[^}]*width:\s*\d+%[^}]*\}/);
+  const capAfter = css.match(/\.cell\.cap::after\s*\{[^}]*width:\s*\d+%[^}]*\}/);
+  assert(!!hintAfter,
+    'hint uses a small ::after marker, not a full-square fill (rule: ' + (hintAfter ? hintAfter[0].trim() : 'MISSING') + ')');
+  assert(!!capAfter,
+    'cap uses a ::after ring marker (rule: ' + (capAfter ? capAfter[0].trim() : 'MISSING') + ')');
+  // Ensure the old full-square fill is gone
+  assert(css.indexOf('inset 0 0 0 999px') < 0, 'no full-square inset fill remains in CSS');
 
   console.log('\n--- runtime errors ---');
   if (errors.length) { console.log(errors.join('\n')); process.exit(1); }
