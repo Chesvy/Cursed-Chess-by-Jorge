@@ -24,7 +24,7 @@ O simplemente abre `index.html` en tu navegador (aunque un servidor local es lo 
 
 ### 🎨 Customizar (Editor de tableros)
 Puedes diseñar tableros y guardarlos (no se borran al cerrar la app):
-- Tamaño del tablero de 4×4 a 12×12.
+- Tamaño del tablero de 2×2 a 24×24 (las celdas se escalan para caber en pantalla).
 - **Casillas vacías** donde ninguna pieza puede quedarse.
 - **Agujero negro** (4×4): absorbe las piezas que entran en su zona.
 - **Agujero blanco** (4×4): empuja las piezas hacia afuera.

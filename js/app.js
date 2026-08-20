@@ -164,10 +164,18 @@
   /* ====================================================================
    *  RENDERING THE GAME
    * ==================================================================== */
+  // Cell size scales with board size so large boards (up to 24×24) fit on screen.
+  function cellSizeFor(size, cap, maxWidth) {
+    const avail = Math.min(maxWidth, (window.innerWidth || maxWidth) - 20);
+    return Math.max(16, Math.min(cap, Math.floor(avail / size)));
+  }
+
   function renderGame() {
     const board = $('board');
     board.innerHTML = '';
-    board.style.gridTemplateColumns = 'repeat(' + GAME.size + ',64px)';
+    const cellPx = cellSizeFor(GAME.size, 64, 1000);
+    const piecePx = Math.max(10, Math.floor(cellPx * 0.62));
+    board.style.gridTemplateColumns = 'repeat(' + GAME.size + ',' + cellPx + 'px)';
     const n = GAME.size;
 
     for (let r = 0; r < n; r++) {
@@ -176,13 +184,16 @@
         const div = document.createElement('div');
         const base = (r + c) % 2 === 0 ? 'light' : 'dark';
         div.className = 'cell ' + base;
-        applyFeatureClass(div, cell.feature);
+        div.style.width = cellPx + 'px';
+        div.style.height = cellPx + 'px';
+        applyFeatureClass(div, cell.feature, piecePx);
 
         if (cell.piece) {
           const p = div;
           const sym = pieceSymbol(cell.piece);
           const sp = document.createElement('span');
           sp.className = 'piece ' + (cell.piece.color === 'white' ? 'w' : 'b');
+          sp.style.fontSize = piecePx + 'px';
           sp.textContent = sym;
           div.appendChild(sp);
           void p;
@@ -228,20 +239,22 @@
     renderClocks();
   }
 
-  function applyFeatureClass(div, f) {
+  function applyFeatureClass(div, f, piecePx) {
     if (!f) return;
+    const fs = piecePx ? Math.max(8, Math.floor(piecePx * 0.4)) + 'px' : '';
     if (f.kind === E.FEAT_VOID) div.classList.add('void');
-    else if (f.kind === E.FEAT_BLACK) { div.classList.add('black'); div.innerHTML += featSpan('◉'); }
-    else if (f.kind === E.FEAT_WHITE) { div.classList.add('white'); div.innerHTML += featSpan('◯'); }
-    else if (f.kind === E.FEAT_WATER) { div.classList.add('water'); div.innerHTML += featSpan('≈'); }
+    else if (f.kind === E.FEAT_BLACK) { div.classList.add('black'); div.innerHTML += featSpan('◉', fs); }
+    else if (f.kind === E.FEAT_WHITE) { div.classList.add('white'); div.innerHTML += featSpan('◯', fs); }
+    else if (f.kind === E.FEAT_WATER) { div.classList.add('water'); div.innerHTML += featSpan('≈', fs); }
     else if (f.kind === E.FEAT_BELT) {
       div.classList.add('belt');
-      div.innerHTML += featSpan(arrow(f.dir) + f.level);
+      div.innerHTML += featSpan(arrow(f.dir) + f.level, fs);
     }
   }
-  function featSpan(txt) {
+  function featSpan(txt, fs) {
     const s = document.createElement('span');
     s.className = 'feat-label';
+    if (fs) s.style.fontSize = fs;
     s.textContent = txt;
     return s.outerHTML;
   }
@@ -489,16 +502,21 @@
   function renderEditor() {
     const board = $('editor-board');
     board.innerHTML = '';
-    board.style.gridTemplateColumns = 'repeat(' + EDIT.size + ',48px)';
+    const cellPx = cellSizeFor(EDIT.size, 48, 760);
+    const piecePx = Math.max(10, Math.floor(cellPx * 0.62));
+    board.style.gridTemplateColumns = 'repeat(' + EDIT.size + ',' + cellPx + 'px)';
     const n = EDIT.size;
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = EDIT.grid[r][c];
       const div = document.createElement('div');
       div.className = 'cell ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
-      applyFeatureClass(div, cell.feature);
+      div.style.width = cellPx + 'px';
+      div.style.height = cellPx + 'px';
+      applyFeatureClass(div, cell.feature, piecePx);
       if (cell.piece) {
         const sp = document.createElement('span');
         sp.className = 'piece ' + (cell.piece.color === 'white' ? 'w' : 'b');
+        sp.style.fontSize = piecePx + 'px';
         sp.textContent = pieceSymbol(cell.piece);
         div.appendChild(sp);
       }
@@ -549,8 +567,9 @@
   }
 
   $('editor-resize').addEventListener('click', () => {
-    const ns = parseInt($('editor-size').value, 10) || 8;
-    if (ns < 4) ns = 4; if (ns > 12) ns = 12;
+    let ns = parseInt($('editor-size').value, 10) || 8;
+    if (ns < 2) ns = 2; if (ns > 24) ns = 24;
+    $('editor-size').value = ns;
     const ng = E.newEmptyBoard(ns);
     for (let r = 0; r < Math.min(ns, EDIT.size); r++) for (let c = 0; c < Math.min(ns, EDIT.size); c++) ng[r][c] = EDIT.grid[r][c];
     EDIT.size = ns; EDIT.grid = ng; renderEditor();
