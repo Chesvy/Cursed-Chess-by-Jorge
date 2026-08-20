@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cursed Chess by Jorge</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ MENU ============ -->
+  <section id="screen-menu" class="screen">
+    <div class="menu-card">
+      <h1 class="title">♟️ Cursed Chess</h1>
+      <p class="subtitle">by Jorge</p>
+      <button class="btn primary big" data-nav="setup-classic">▶ Partida simple</button>
+      <button class="btn primary big" data-nav="setup-custom">🎨 Customizar</button>
+      <div class="menu-sep"></div>
+      <button class="btn" data-nav="games">📂 Mis partidas</button>
+      <button class="btn" data-nav="editor">🛠️ Editor de tableros</button>
+      <button class="btn" data-nav="boards">🗺️ Mis tableros</button>
+      <button class="btn" data-nav="designer">🧬 Diseñar piezas</button>
+      <button class="btn" data-nav="settings">⚙️ Ajustes</button>
+      <p class="foot">Gana el jugador que capture al rey enemigo.</p>
+    </div>
+  </section>
+
+  <!-- ============ SETUP ============ -->
+  <section id="screen-setup" class="screen hidden">
+    <div class="card">
+      <button class="btn ghost back" data-nav="menu">← Menú</button>
+      <h2 id="setup-title">Nueva partida</h2>
+
+      <div id="setup-board-picker" class="hidden">
+        <label>Tablero</label>
+        <select id="setup-board-select"></select>
+        <button class="btn small" id="setup-board-refresh">Refrescar</button>
+      </div>
+
+      <label>Modo de juego</label>
+      <div class="seg" id="setup-mode">
+        <button data-mode="pvp" class="active">2 personas</button>
+        <button data-mode="ai">Contra la IA</button>
+      </div>
+
+      <div id="setup-ai-opts" class="hidden">
+        <label>Eres</label>
+        <div class="seg" id="setup-color">
+          <button data-color="white" class="active">Blancas</button>
+          <button data-color="black">Negras</button>
+        </div>
+        <label>Dificultad IA</label>
+        <div class="seg" id="setup-diff">
+          <button data-diff="1">Fácil</button>
+          <button data-diff="2" class="active">Media</button>
+          <button data-diff="3">Difícil</button>
+        </div>
+      </div>
+
+      <label>Temporizador</label>
+      <div class="seg" id="setup-timer">
+        <button data-timer="off" class="active">Sin límite</button>
+        <button data-timer="on">Con temporizador</button>
+      </div>
+      <div id="setup-timer-opts" class="hidden">
+        <label>Minutos por jugador</label>
+        <input type="number" id="setup-minutes" value="10" min="1" max="120">
+        <label>Incremento (s/mov)</label>
+        <input type="number" id="setup-inc" value="0" min="0" max="60">
+      </div>
+
+      <label>Nombre de la partida</label>
+      <input type="text" id="setup-name" placeholder="Mi partida">
+
+      <button class="btn primary big" id="setup-start">Jugar</button>
+      <div id="setup-error" class="error"></div>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="screen-game" class="screen hidden">
+    <div class="topbar">
+      <button class="btn ghost back" id="game-quit">← Menú</button>
+      <span id="game-title" class="gtitle"></span>
+      <button class="btn small" id="game-save">💾 Guardar</button>
+      <button class="btn small" id="game-restart">↺ Reiniciar</button>
+    </div>
+    <div class="game-wrap">
+      <div class="clocks">
+        <div class="clock" id="clock-white">00:00</div>
+        <div class="clock" id="clock-black">00:00</div>
+      </div>
+      <div id="board" class="board"></div>
+      <div id="game-info" class="ginfo"></div>
+      <div id="captured" class="captured"></div>
+    </div>
+    <div id="overlay" class="hidden"></div>
+    <div id="promo" class="hidden promo">
+      <h3>Coronar peón:</h3>
+      <div id="promo-opts"></div>
+    </div>
+    <div id="modal" class="hidden modal"></div>
+  </section>
+
+  <!-- ============ EDITOR ============ -->
+  <section id="screen-editor" class="screen hidden">
+    <div class="card wide">
+      <div class="topbar">
+        <button class="btn ghost back" id="editor-back">← Atrás</button>
+        <h2>Editor de tablero</h2>
+        <button class="btn primary" id="editor-save">💾 Guardar tablero</button>
+      </div>
+      <div class="editor-wrap">
+        <div id="editor-board" class="board"></div>
+        <div class="editor-panel">
+          <label>Tamaño</label>
+          <div class="row">
+            <input type="number" id="editor-size" value="8" min="4" max="12">
+            <button class="btn small" id="editor-resize">Aplicar</button>
+          </div>
+
+          <label>Herramienta</label>
+          <div class="tools" id="editor-tools">
+            <button data-tool="erase" class="tool">🧽 Borrar</button>
+            <button data-tool="void" class="tool">🕳️ Vacío</button>
+            <button data-tool="black" class="tool">⚫ Agujero negro</button>
+            <button data-tool="white" class="tool">⚪ Agujero blanco</button>
+            <button data-tool="belt" class="tool">➡️ Cinta</button>
+            <button data-tool="water" class="tool">🌊 Agua</button>
+            <button data-tool="piece" class="tool">♟️ Pieza</button>
+          </div>
+
+          <div id="tool-opts" class="tool-opts">
+            <label>Dirección cinta</label>
+            <div class="seg" id="belt-dir">
+              <button data-dir="n">↑</button>
+              <button data-dir="e">→</button>
+              <button data-dir="s">↓</button>
+              <button data-dir="w">←</button>
+            </div>
+            <label>Nivel cinta (1-5)</label>
+            <input type="range" id="belt-level" min="1" max="5" value="1">
+            <span id="belt-level-val">1</span>
+
+            <label>Color de pieza</label>
+            <div class="seg" id="piece-color">
+              <button data-color="white" class="active">Blanca</button>
+              <button data-color="black">Negra</button>
+            </div>
+            <label>Tipo de pieza</label>
+            <select id="piece-type"></select>
+          </div>
+
+          <div class="hint">Agujeros: 4×4. Se arrastran/posicionan sobre el tablero.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DESIGNER ============ -->
+  <section id="screen-designer" class="screen hidden">
+    <div class="card">
+      <button class="btn ghost back" data-nav="menu">← Menú</button>
+      <h2>Diseñar piezas</h2>
+
+      <div class="designer-wrap">
+        <div class="designer-list" id="designer-list"></div>
+
+        <div class="designer-edit">
+          <label>Nombre</label>
+          <input type="text" id="des-name" placeholder="Ej: Hidra">
+          <label>Símbolo (emoji)</label>
+          <input type="text" id="des-symbol" placeholder="🦑">
+          <label>Habilidades</label>
+          <div id="des-abilities"></div>
+
+          <label>Movimientos</label>
+          <div id="des-moves" class="moves"></div>
+          <button class="btn small" id="des-addmove">+ Añadir movimiento</button>
+
+          <div class="row">
+            <button class="btn primary" id="des-save">Guardar pieza</button>
+            <button class="btn" id="des-new">Nueva</button>
+          </div>
+          <div id="des-error" class="error"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIST ============ -->
+  <section id="screen-list" class="screen hidden">
+    <div class="card">
+      <button class="btn ghost back" data-nav="menu">← Menú</button>
+      <h2 id="list-title">Guardados</h2>
+      <div id="list-items" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="screen-settings" class="screen hidden">
+    <div class="card">
+      <button class="btn ghost back" data-nav="menu">← Menú</button>
+      <h2>Ajustes</h2>
+      <label>Tema</label>
+      <div class="seg" id="settings-theme">
+        <button data-theme="dark" class="active">Oscuro</button>
+        <button data-theme="light">Claro</button>
+      </div>
+      <button class="btn small" id="settings-reset">Borrar todos los datos guardados</button>
+      <div id="settings-msg" class="msg"></div>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/pieces.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
