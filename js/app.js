@@ -177,6 +177,7 @@
     const cellPx = cellSizeFor(GAME.size, 64, 1000);
     const piecePx = Math.max(10, Math.floor(cellPx * 0.62));
     board.style.gridTemplateColumns = 'repeat(' + GAME.size + ',' + cellPx + 'px)';
+    board.style.gridTemplateRows = 'repeat(' + GAME.size + ',' + cellPx + 'px)';
     const n = GAME.size;
 
     for (let r = 0; r < n; r++) {
@@ -516,6 +517,7 @@
     const cellPx = cellSizeFor(EDIT.size, 48, 760);
     const piecePx = Math.max(10, Math.floor(cellPx * 0.62));
     board.style.gridTemplateColumns = 'repeat(' + EDIT.size + ',' + cellPx + 'px)';
+    board.style.gridTemplateRows = 'repeat(' + EDIT.size + ',' + cellPx + 'px)';
     const n = EDIT.size;
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = EDIT.grid[r][c];

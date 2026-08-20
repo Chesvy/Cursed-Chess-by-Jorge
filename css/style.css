@@ -119,6 +119,7 @@ input[type=range] { width: 80%; vertical-align: middle; }
   position: relative; width: 64px; height: 64px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
+  outline: none; /* avoid focus ring that could overlap adjacent squares */
 }
 .cell.light { background: var(--light); }
 .cell.dark { background: var(--dark); }
